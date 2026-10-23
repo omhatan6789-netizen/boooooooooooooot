@@ -1,0 +1,14 @@
+# بوت تيليجرام بسيط جدًا
+
+الوظيفة الوحيدة: عند إرسال `/start` يرد البوت بالنص التالي فقط:
+
+`حياك بالبوت 🤍`
+
+## إعداد Render
+- النوع: **Web Service**
+- Runtime: Python
+- Build Command: `pip install -r requirements.txt`
+- Start Command: `python main.py`
+- Environment Variable: `BOT_TOKEN` = توكن البوت من BotFather
+
+لا توجد قاعدة بيانات، ولا Webhook، ولا مسار `/health`، ولا أوامر أخرى. يستخدم البوت Polling، مع خادم HTTP بسيط على المنفذ الذي يحدده Render حتى تعمل الخدمة كـ Web Service.
