@@ -6,6 +6,8 @@ from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
+from rank_system import router as rank_router
+
 from db import close_db, init_db
 from user_registry import ensure_user_registered
 
@@ -17,6 +19,7 @@ if not BOT_TOKEN:
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
+dp.include_router(rank_router)
 
 
 @dp.message(CommandStart())
