@@ -108,21 +108,23 @@ async def ensure_local_member(chat_id: int, user_id: int) -> None:
         )
 
 
+
 async def resolve_target(
     message: Message, target_text: str
 ) -> tuple[int, str, str | None] | None:
-    # الرد على رسالة يحدد المستخدم مباشرة
+    # إذا كان الأمر ردًا على رسالة، فالشخص الموجود في الرد له الأولوية
     replied = message.reply_to_message
-    if replied and replied.from_user and not target_text.strip():
+
+    if replied and replied.from_user:
         user = replied.from_user
+
         await ensure_user_registered(user)
         await ensure_local_member(message.chat.id, user.id)
+
         return user.id, user.full_name, user.username
 
     target_text = target_text.strip()
-
-    if not target_text and message.from_user:
-        # إذا لم يُذكر هدف ولم يوجد رد، لا نعتبر المرسل هدفًا تلقائيًا
+    if not target_text:
         return None
 
     pool = get_pool()
@@ -130,25 +132,27 @@ async def resolve_target(
     if target_text.isdigit():
         user_id = int(target_text)
 
-        profile = await find_registered_user(user_id=user_id)
-
-        if profile:
-            name = profile.get("first_name") or str(user_id)
-            username = profile.get("username")
-            await ensure_local_member(message.chat.id, user_id)
-            return user_id, name, username
-
-        # نحاول جلبه من المجموعة إن أمكن
         try:
             member = await message.bot.get_chat_member(
                 message.chat.id, user_id
             )
             user = member.user
+
             await ensure_user_registered(user)
             await ensure_local_member(message.chat.id, user.id)
+
             return user.id, user.full_name, user.username
         except Exception:
-            return None
+            profile = await find_registered_user(user_id=user_id)
+
+            if not profile:
+                return None
+
+            name = profile.get("first_name") or str(user_id)
+            username = profile.get("username")
+
+            await ensure_local_member(message.chat.id, user_id)
+            return user_id, name, username
 
     if target_text.startswith("@"):
         profile = await find_registered_user(
@@ -159,10 +163,12 @@ async def resolve_target(
             user_id = int(profile["user_id"])
             name = profile.get("first_name") or target_text
             username = profile.get("username")
+
             await ensure_local_member(message.chat.id, user_id)
             return user_id, name, username
 
     return None
+
 
 
 def parse_rank_and_target(
