@@ -41,6 +41,27 @@ async def init_db() -> None:
             "ON telegram_users (LOWER(username)) WHERE username IS NOT NULL"
         )
 
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS group_user_ranks (
+                chat_id BIGINT NOT NULL,
+                user_id BIGINT NOT NULL,
+                rank_key TEXT NOT NULL,
+                assigned_by BIGINT,
+                assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                PRIMARY KEY (chat_id, user_id, rank_key)
+            )
+        """)
+
+        await conn.execute("""
+            CREATE TABLE IF NOT EXISTS global_user_ranks (
+                user_id BIGINT NOT NULL,
+                rank_key TEXT NOT NULL,
+                assigned_by BIGINT,
+                assigned_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                PRIMARY KEY (user_id, rank_key)
+            )
+        """)
+
 
 async def close_db() -> None:
     global _pool
