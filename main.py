@@ -6,6 +6,9 @@ from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 
+from db import close_db, init_db
+from user_registry import ensure_user_registered
+
 BOT_TOKEN = os.getenv("BOT_TOKEN", "").strip()
 PORT = int(os.getenv("PORT", "10000"))
 
@@ -18,15 +21,18 @@ dp = Dispatcher()
 
 @dp.message(CommandStart())
 async def start_command(message: Message) -> None:
+    # Register the sender once. Future commands can use the same helper.
+    if message.from_user:
+        await ensure_user_registered(message.from_user)
     await message.answer("حياك بالبوت 🤍")
 
 
 async def home(request: web.Request) -> web.Response:
+    # Render needs the Web Service to listen on PORT; no /health route is added.
     return web.Response(text="Bot is running")
 
 
 async def main() -> None:
-    # Render Web Service needs an HTTP server listening on its assigned port.
     app = web.Application()
     app.router.add_get("/", home)
     runner = web.AppRunner(app)
@@ -35,8 +41,10 @@ async def main() -> None:
     await site.start()
 
     try:
+        await init_db()
         await dp.start_polling(bot)
     finally:
+        await close_db()
         await runner.cleanup()
         await bot.session.close()
 
